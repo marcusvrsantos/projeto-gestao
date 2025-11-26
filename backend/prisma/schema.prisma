@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums para padronizar status
+enum Role {
+  ADMIN
+  GESTOR
+  USER
+}
+
+enum StatusOrcamento {
+  PENDENTE
+  APROVADO
+  REJEITADO
+}
+
+enum StatusConvite {
+  PENDENTE
+  CONFIRMADO
+  RECUSADO
+}
+
+// --- Autenticação ---
+model Usuario {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  senha     String   // Hash
+  nome      String
+  role      Role     @default(USER)
+  criadoEm  DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
+
+// --- Entidades Core ---
+model Empresa {
+  id            String        @id @default(uuid())
+  razaoSocial   String
+  cnpj          String        @unique
+  nomeFantasia  String?
+  colaboradores Colaborador[]
+  criadoEm      DateTime      @default(now())
+}
+
+model Colaborador {
+  id          String   @id @default(uuid())
+  nome        String
+  email       String   @unique
+  cargo       String?
+  empresaId   String
+  empresa     Empresa  @relation(fields: [empresaId], references: [id])
+  criadoEm    DateTime @default(now())
+}
+
+model Fornecedor {
+  id          String      @id @default(uuid())
+  nome        String
+  cnpjOuCpf   String      @unique
+  categoria   String?
+  telefone    String?
+  documentos  Documento[]
+  orcamentos  Orcamento[]
+  criadoEm    DateTime    @default(now())
+}
+
+model Documento {
+  id           String     @id @default(uuid())
+  nomeArquivo  String
+  caminho      String     // Path no S3 ou local
+  tipo         String     // pdf, png, etc
+  fornecedorId String
+  fornecedor   Fornecedor @relation(fields: [fornecedorId], references: [id], onDelete: Cascade)
+  enviadoEm    DateTime   @default(now())
+}
+
+// --- Eventos e Financeiro ---
+model Evento {
+  id          String      @id @default(uuid())
+  nome        String
+  data        DateTime
+  local       String?
+  descricao   String?
+  orcamentos  Orcamento[]
+  convites    Convite[]
+  criadoEm    DateTime    @default(now())
+}
+
+model Orcamento {
+  id           String          @id @default(uuid())
+  valor        Decimal
+  status       StatusOrcamento @default(PENDENTE)
+  formaPagto   String?
+  eventoId     String
+  evento       Evento          @relation(fields: [eventoId], references: [id])
+  fornecedorId String
+  fornecedor   Fornecedor      @relation(fields: [fornecedorId], references: [id])
+  criadoEm     DateTime        @default(now())
+}
+
+model Convite {
+  id           String        @id @default(uuid())
+  emailConvidado String
+  nomeConvidado  String?
+  status       StatusConvite @default(PENDENTE)
+  acompanhantes Int          @default(0)
+  eventoId     String
+  evento       Evento        @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  token        String        @unique // Para confirmação via link
+  enviadoEm    DateTime      @default(now())
+}
