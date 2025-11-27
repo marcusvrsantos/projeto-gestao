@@ -1,20 +1,33 @@
 import { useContext } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './contexts/AuthContext';
 import { Login } from './pages/Login';
+import { Layout } from './components/Layout';
 
-const PrivateRoute = ({ children }: { children: JSX.Element }) => {
+// Componente Protegido
+const PrivateRoute = () => {
   const { signed } = useContext(AuthContext);
-  return signed ? children : <Navigate to="/" />;
+  return signed ? <Layout /> : <Navigate to="/" />;
 };
 
+// Dashboard Temporário (Só para vermos o layout funcionando)
 const Dashboard = () => {
-  const { user, signOut } = useContext(AuthContext);
   return (
-    <div className="min-h-screen bg-slate-100 p-8">
-      <div className="max-w-4xl mx-auto bg-white p-6 rounded shadow">
-        <h1 className="text-2xl font-bold text-slate-800">Bem-vindo, {user?.nome}!</h1>
-        <button onClick={signOut} className="mt-6 text-red-600 hover:underline">Sair do Sistema</button>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Card de Exemplo 1 */}
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+        <h3 className="text-slate-500 text-sm font-medium mb-2">Total Colaboradores</h3>
+        <p className="text-3xl font-bold text-slate-800">124</p>
+      </div>
+      {/* Card de Exemplo 2 */}
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+        <h3 className="text-slate-500 text-sm font-medium mb-2">Eventos Ativos</h3>
+        <p className="text-3xl font-bold text-blue-600">3</p>
+      </div>
+      {/* Card de Exemplo 3 */}
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+        <h3 className="text-slate-500 text-sm font-medium mb-2">Orçamentos Pendentes</h3>
+        <p className="text-3xl font-bold text-amber-500">R$ 45.200</p>
       </div>
     </div>
   );
@@ -26,7 +39,16 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Login />} />
-          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+          
+          {/* Todas as rotas internas usam o Layout novo */}
+          <Route element={<PrivateRoute />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            {/* Futuras rotas virão aqui: */}
+            <Route path="/colaboradores" element={<h1 className="text-2xl">Gestão de Colaboradores</h1>} />
+            <Route path="/fornecedores" element={<h1 className="text-2xl">Gestão de Fornecedores</h1>} />
+            <Route path="/eventos" element={<h1 className="text-2xl">Gestão de Eventos</h1>} />
+            <Route path="/orcamentos" element={<h1 className="text-2xl">Gestão de Orçamentos</h1>} />
+          </Route>
         </Routes>
       </BrowserRouter>
     </AuthProvider>
