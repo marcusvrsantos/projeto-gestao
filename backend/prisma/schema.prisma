@@ -49,11 +49,9 @@ model Colaborador {
   nome           String
   email          String    @unique
   cargo          String?
-  // Novos campos adicionados:
   cpf            String?   
   dataNascimento DateTime?
   setor          String?
-  
   empresaId      String
   empresa        Empresa   @relation(fields: [empresaId], references: [id])
   criadoEm       DateTime  @default(now())
@@ -63,8 +61,12 @@ model Fornecedor {
   id          String      @id @default(uuid())
   nome        String
   cnpjOuCpf   String      @unique
-  categoria   String?
+  categoria   String?     // Tipo de Serviço
   telefone    String?
+  // Campos Novos:
+  email       String?
+  responsavel String?
+
   documentos  Documento[]
   orcamentos  Orcamento[]
   criadoEm    DateTime    @default(now())

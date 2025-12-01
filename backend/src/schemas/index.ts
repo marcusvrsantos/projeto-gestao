@@ -17,16 +17,17 @@ export const colaboradorSchema = z.object({
   email: z.string().email(),
   cargo: z.string().optional(),
   empresaId: z.string().uuid("ID da empresa inválido"),
-  // Novos campos:
   cpf: z.string().optional(),
   setor: z.string().optional(),
-  // A data vem como string do frontend (YYYY-MM-DD), validamos se é string
   dataNascimento: z.string().optional() 
 });
 
+// Atualizado com os campos novos
 export const fornecedorSchema = z.object({
-  nome: z.string().min(2),
-  cnpjOuCpf: z.string().min(11, "Documento inválido"),
+  nome: z.string().min(2, "Razão Social é obrigatória"),
+  cnpjOuCpf: z.string().min(11, "CNPJ inválido"),
   categoria: z.string().optional(),
-  telefone: z.string().optional()
+  telefone: z.string().optional(),
+  email: z.string().email().optional().or(z.literal('')),
+  responsavel: z.string().optional()
 });

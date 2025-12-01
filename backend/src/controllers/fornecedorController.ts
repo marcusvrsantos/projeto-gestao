@@ -20,11 +20,18 @@ export const criarFornecedor = async (req: Request, res: Response) => {
     });
 
     if (existe) {
-      return res.status(400).json({ error: 'Fornecedor já cadastrado com este documento.' });
+      return res.status(400).json({ error: 'Fornecedor já cadastrado com este CNPJ.' });
     }
 
     const fornecedor = await prisma.fornecedor.create({
-      data: dados
+      data: {
+        nome: dados.nome,
+        cnpjOuCpf: dados.cnpjOuCpf,
+        categoria: dados.categoria,
+        telefone: dados.telefone,
+        email: dados.email,
+        responsavel: dados.responsavel
+      }
     });
 
     res.status(201).json(fornecedor);
