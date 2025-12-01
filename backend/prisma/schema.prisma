@@ -7,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Enums para padronizar status
 enum Role {
   ADMIN
   GESTOR
@@ -26,18 +25,16 @@ enum StatusConvite {
   RECUSADO
 }
 
-// --- Autenticação ---
 model Usuario {
   id        String   @id @default(uuid())
   email     String   @unique
-  senha     String   // Hash
+  senha     String
   nome      String
   role      Role     @default(USER)
   criadoEm  DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 }
 
-// --- Entidades Core ---
 model Empresa {
   id            String        @id @default(uuid())
   razaoSocial   String
@@ -48,13 +45,18 @@ model Empresa {
 }
 
 model Colaborador {
-  id          String   @id @default(uuid())
-  nome        String
-  email       String   @unique
-  cargo       String?
-  empresaId   String
-  empresa     Empresa  @relation(fields: [empresaId], references: [id])
-  criadoEm    DateTime @default(now())
+  id             String    @id @default(uuid())
+  nome           String
+  email          String    @unique
+  cargo          String?
+  // Novos campos adicionados:
+  cpf            String?   
+  dataNascimento DateTime?
+  setor          String?
+  
+  empresaId      String
+  empresa        Empresa   @relation(fields: [empresaId], references: [id])
+  criadoEm       DateTime  @default(now())
 }
 
 model Fornecedor {
@@ -71,14 +73,13 @@ model Fornecedor {
 model Documento {
   id           String     @id @default(uuid())
   nomeArquivo  String
-  caminho      String     // Path no S3 ou local
-  tipo         String     // pdf, png, etc
+  caminho      String
+  tipo         String
   fornecedorId String
   fornecedor   Fornecedor @relation(fields: [fornecedorId], references: [id], onDelete: Cascade)
   enviadoEm    DateTime   @default(now())
 }
 
-// --- Eventos e Financeiro ---
 model Evento {
   id          String      @id @default(uuid())
   nome        String
@@ -103,13 +104,13 @@ model Orcamento {
 }
 
 model Convite {
-  id           String        @id @default(uuid())
+  id             String        @id @default(uuid())
   emailConvidado String
   nomeConvidado  String?
-  status       StatusConvite @default(PENDENTE)
-  acompanhantes Int          @default(0)
-  eventoId     String
-  evento       Evento        @relation(fields: [eventoId], references: [id], onDelete: Cascade)
-  token        String        @unique // Para confirmação via link
-  enviadoEm    DateTime      @default(now())
+  status         StatusConvite @default(PENDENTE)
+  acompanhantes  Int           @default(0)
+  eventoId       String
+  evento         Evento        @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  token          String        @unique
+  enviadoEm      DateTime      @default(now())
 }

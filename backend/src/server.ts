@@ -3,7 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
 import colaboradorRoutes from './routes/colaborador.routes';
-import empresaRoutes from './routes/empresa.routes'; // <--- Nova linha
+import empresaRoutes from './routes/empresa.routes';
+import fornecedorRoutes from './routes/fornecedor.routes'; // <--- Import novo
 
 dotenv.config();
 
@@ -13,7 +14,8 @@ app.use(express.json());
 
 app.use('/auth', authRoutes);
 app.use('/colaboradores', colaboradorRoutes);
-app.use('/empresas', empresaRoutes); // <--- Nova linha
+app.use('/empresas', empresaRoutes);
+app.use('/fornecedores', fornecedorRoutes); // <--- Rota nova
 
 app.get('/', (req, res) => {
   res.json({ status: 'online', message: 'API Gestão Corporativa rodando 🚀' });
