@@ -6,7 +6,8 @@ import colaboradorRoutes from './routes/colaborador.routes';
 import empresaRoutes from './routes/empresa.routes';
 import fornecedorRoutes from './routes/fornecedor.routes';
 import dashboardRoutes from './routes/dashboard.routes';
-import eventoRoutes from './routes/evento.routes'; // <--- Import novo
+import eventoRoutes from './routes/evento.routes';
+import orcamentoRoutes from './routes/orcamento.routes'; // <--- Import novo
 
 dotenv.config();
 
@@ -19,7 +20,8 @@ app.use('/colaboradores', colaboradorRoutes);
 app.use('/empresas', empresaRoutes);
 app.use('/fornecedores', fornecedorRoutes);
 app.use('/dashboard', dashboardRoutes);
-app.use('/eventos', eventoRoutes); // <--- Rota nova
+app.use('/eventos', eventoRoutes);
+app.use('/orcamentos', orcamentoRoutes); // <--- Rota nova
 
 app.get('/', (req, res) => {
   res.json({ status: 'online', message: 'API Gestão Corporativa rodando 🚀' });

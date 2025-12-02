@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import { Plus, Trash2, X, CheckCircle, AlertCircle, Search } from 'lucide-react';
+import { Plus, Trash2, X, CheckCircle, AlertCircle, Edit } from 'lucide-react';
 
 // Interfaces
 interface Fornecedor {
@@ -24,6 +24,9 @@ export function Fornecedores() {
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFormModal, setShowFormModal] = useState(false);
+  
+  // Estado para controlar se é Edição (guarda o ID) ou Criação (null)
+  const [editingId, setEditingId] = useState<string | null>(null);
   
   const [msgModal, setMsgModal] = useState<MessageModalData>({ 
     show: false, title: '', message: '', type: 'success' 
@@ -58,22 +61,48 @@ export function Fornecedores() {
     }
   }
 
+  // Abre o modal limpo para criar
+  function handleNovo() {
+    setEditingId(null); // Modo criação
+    setNome(''); setResponsavel(''); setTelefone(''); setEmail(''); setCnpj(''); setTipoServico('');
+    setShowFormModal(true);
+  }
+
+  // Abre o modal preenchido para editar
+  function handleEditar(f: Fornecedor) {
+    setEditingId(f.id); // Modo edição
+    setNome(f.nome);
+    setResponsavel(f.responsavel || '');
+    setTelefone(f.telefone || '');
+    setEmail(f.email || '');
+    setCnpj(f.cnpjOuCpf);
+    setTipoServico(f.categoria || '');
+    setShowFormModal(true);
+  }
+
   async function handleSalvar(e: React.FormEvent) {
     e.preventDefault();
     try {
-      await api.post('/fornecedores', { 
+      const payload = { 
         nome, 
         cnpjOuCpf: cnpj, 
         categoria: tipoServico, 
         telefone,
         email,
         responsavel
-      });
+      };
+
+      if (editingId) {
+        // Se tem ID, é Edição (PUT)
+        await api.put(`/fornecedores/${editingId}`, payload);
+        showMessage('Atualizado', 'Dados do fornecedor atualizados!', 'success');
+      } else {
+        // Se não tem ID, é Criação (POST)
+        await api.post('/fornecedores', payload);
+        showMessage('Sucesso', 'Fornecedor cadastrado com sucesso!', 'success');
+      }
       
       setShowFormModal(false);
-      showMessage('Sucesso!', 'Fornecedor cadastrado com sucesso.', 'success');
-      
-      setNome(''); setCnpj(''); setTipoServico(''); setTelefone(''); setEmail(''); setResponsavel('');
       carregar();
     } catch (error: any) {
       const erroMsg = error.response?.data?.error || 'Erro ao salvar';
@@ -100,14 +129,13 @@ export function Fornecedores() {
           <p className="text-slate-500">Gestão de parceiros e prestadores de serviço.</p>
         </div>
         <button 
-          onClick={() => setShowFormModal(true)}
+          onClick={handleNovo}
           className="bg-[#A6192E] hover:bg-[#8a1425] text-white px-4 py-2 rounded flex items-center gap-2 transition-colors shadow-sm"
         >
           <Plus size={20} /> Novo Fornecedor
         </button>
       </div>
 
-      {/* TABELA ESTILO PLANILHA */}
       <div className="bg-white rounded-lg shadow border border-slate-200 overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead className="bg-slate-100 border-b border-slate-300 text-slate-700">
@@ -131,7 +159,12 @@ export function Fornecedores() {
                 <td className="px-4 py-3 border-r border-slate-100 align-middle font-mono text-xs">{f.cnpjOuCpf}</td>
                 <td className="px-4 py-3 border-r border-slate-100 align-middle">{f.categoria || '-'}</td>
                 
-                <td className="px-4 py-3 text-center align-middle">
+                <td className="px-4 py-3 text-center align-middle whitespace-nowrap">
+                  {/* Botão Editar */}
+                  <button onClick={() => handleEditar(f)} className="text-blue-500 hover:text-blue-700 p-1 mr-2" title="Editar">
+                    <Edit size={16} />
+                  </button>
+                  {/* Botão Excluir */}
                   <button onClick={() => handleDeletar(f.id)} className="text-red-500 hover:text-red-700 p-1" title="Excluir">
                     <Trash2 size={16} />
                   </button>
@@ -145,13 +178,14 @@ export function Fornecedores() {
         </table>
       </div>
 
-      {/* MODAL DE CADASTRO */}
       {showFormModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
           <div className="bg-white rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden scale-in-center">
             
             <div className="flex justify-between items-center p-6 border-b border-slate-100">
-              <h2 className="text-xl font-bold text-[#A6192E]">Novo Fornecedor</h2>
+              <h2 className="text-xl font-bold text-[#A6192E]">
+                {editingId ? 'Editar Fornecedor' : 'Novo Fornecedor'}
+              </h2>
               <button onClick={() => setShowFormModal(false)} className="text-slate-400 hover:text-slate-600 transition-colors rounded-full p-1 hover:bg-slate-100">
                 <X size={24} />
               </button>
@@ -159,45 +193,41 @@ export function Fornecedores() {
 
             <form onSubmit={handleSalvar} className="p-8 space-y-5">
               
-              {/* Razão Social */}
               <div>
                 <label className="block text-sm font-bold text-[#A6192E] mb-2">Razão Social / Nome</label>
-                <input required value={nome} onChange={e => setNome(e.target.value)} className="w-full border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E] focus:ring-1 focus:ring-[#A6192E]" placeholder="Digite a razão social" />
+                <input required value={nome} onChange={e => setNome(e.target.value)} className="w-full border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E] focus:ring-1 focus:ring-[#A6192E]" />
               </div>
 
-              {/* Responsável e Telefone */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                   <label className="block text-sm font-bold text-[#A6192E] mb-2">Responsável (se houver)</label>
-                   <input value={responsavel} onChange={e => setResponsavel(e.target.value)} className="w-full border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E] focus:ring-1 focus:ring-[#A6192E]" placeholder="Nome do contato" />
+                   <label className="block text-sm font-bold text-[#A6192E] mb-2">Responsável</label>
+                   <input value={responsavel} onChange={e => setResponsavel(e.target.value)} className="w-full border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E] focus:ring-1 focus:ring-[#A6192E]" />
                 </div>
                 <div>
                    <label className="block text-sm font-bold text-[#A6192E] mb-2">Telefone</label>
-                   <input value={telefone} onChange={e => setTelefone(e.target.value)} className="w-full border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E] focus:ring-1 focus:ring-[#A6192E]" placeholder="(00) 0000-0000" />
+                   <input value={telefone} onChange={e => setTelefone(e.target.value)} className="w-full border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E] focus:ring-1 focus:ring-[#A6192E]" />
                 </div>
               </div>
 
-              {/* E-mail e CNPJ */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-bold text-[#A6192E] mb-2">E-mail</label>
-                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E] focus:ring-1 focus:ring-[#A6192E]" placeholder="contato@empresa.com" />
+                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E] focus:ring-1 focus:ring-[#A6192E]" />
                 </div>
                 <div>
                    <label className="block text-sm font-bold text-[#A6192E] mb-2">CNPJ</label>
-                   <input required value={cnpj} onChange={e => setCnpj(e.target.value)} className="w-full border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E] focus:ring-1 focus:ring-[#A6192E]" placeholder="00.000.000/0000-00" />
+                   <input required value={cnpj} onChange={e => setCnpj(e.target.value)} className="w-full border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E] focus:ring-1 focus:ring-[#A6192E]" />
                 </div>
               </div>
 
-              {/* Tipo de Serviço */}
               <div>
                 <label className="block text-sm font-bold text-[#A6192E] mb-2">Tipo de Serviço</label>
-                <input value={tipoServico} onChange={e => setTipoServico(e.target.value)} className="w-full border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E] focus:ring-1 focus:ring-[#A6192E]" placeholder="Ex: Alimentação, Transporte, Som..." />
+                <input value={tipoServico} onChange={e => setTipoServico(e.target.value)} className="w-full border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E] focus:ring-1 focus:ring-[#A6192E]" />
               </div>
 
               <div className="pt-6 flex justify-center">
                 <button type="submit" className="px-10 py-3 bg-[#900020] text-white font-bold rounded-full hover:bg-[#700018] shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1">
-                  Cadastrar Fornecedor
+                  {editingId ? 'Salvar Alterações' : 'Cadastrar Fornecedor'}
                 </button>
               </div>
 
@@ -206,7 +236,6 @@ export function Fornecedores() {
         </div>
       )}
 
-      {/* MODAL DE MENSAGEM */}
       {msgModal.show && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4 animate-fade-in">
           <div className="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl scale-in-center text-center flex flex-col items-center font-sans">

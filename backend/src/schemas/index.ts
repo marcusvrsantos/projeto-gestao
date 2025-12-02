@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+// ... (Schemas anteriores mantidos, adicionando o de Orçamento)
+
 export const loginSchema = z.object({
   email: z.string().email("E-mail inválido"),
   senha: z.string().min(6, "A senha deve ter no mínimo 6 caracteres")
@@ -31,11 +33,19 @@ export const fornecedorSchema = z.object({
   responsavel: z.string().optional()
 });
 
-// Novo Schema de Evento
 export const eventoSchema = z.object({
-  nome: z.string().min(3, "Nome do evento é obrigatório"),
-  data: z.string(), // Recebe como string do front (ISO date)
+  nome: z.string().min(3),
+  data: z.string(),
   local: z.string().optional(),
   descricao: z.string().optional(),
   status: z.enum(["AGENDADO", "REALIZADO", "CANCELADO"]).optional()
+});
+
+// Novo Schema de Orçamento
+export const orcamentoSchema = z.object({
+  valor: z.number().min(0),
+  status: z.enum(["PENDENTE", "APROVADO", "REJEITADO"]).optional(),
+  formaPagto: z.string().optional(),
+  eventoId: z.string().uuid(),
+  fornecedorId: z.string().uuid()
 });

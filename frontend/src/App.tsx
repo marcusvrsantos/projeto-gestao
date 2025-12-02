@@ -6,7 +6,8 @@ import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { Colaboradores } from './pages/Colaboradores';
 import { Fornecedores } from './pages/Fornecedores';
-import { Eventos } from './pages/Eventos'; // <--- Import novo
+import { Eventos } from './pages/Eventos';
+import { Orcamentos } from './pages/Orcamentos'; // <--- Import novo
 
 const PrivateRoute = () => {
   const { signed } = useContext(AuthContext);
@@ -23,8 +24,8 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/colaboradores" element={<Colaboradores />} />
             <Route path="/fornecedores" element={<Fornecedores />} />
-            <Route path="/eventos" element={<Eventos />} /> {/* <--- Tela Real */}
-            <Route path="/orcamentos" element={<h1 className="text-2xl p-8">Gestão de Orçamentos (Em breve)</h1>} />
+            <Route path="/eventos" element={<Eventos />} />
+            <Route path="/orcamentos" element={<Orcamentos />} /> {/* <--- Tela Real aqui */}
           </Route>
         </Routes>
       </BrowserRouter>
