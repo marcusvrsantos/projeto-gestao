@@ -3,9 +3,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './contexts/AuthContext';
 import { Login } from './pages/Login';
 import { Layout } from './components/Layout';
-import { Dashboard } from './pages/Dashboard'; // <--- Import Real
+import { Dashboard } from './pages/Dashboard';
 import { Colaboradores } from './pages/Colaboradores';
 import { Fornecedores } from './pages/Fornecedores';
+import { Eventos } from './pages/Eventos'; // <--- Import novo
 
 const PrivateRoute = () => {
   const { signed } = useContext(AuthContext);
@@ -19,10 +20,10 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Login />} />
           <Route element={<PrivateRoute />}>
-            <Route path="/dashboard" element={<Dashboard />} /> {/* <--- Componente Real */}
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/colaboradores" element={<Colaboradores />} />
             <Route path="/fornecedores" element={<Fornecedores />} />
-            <Route path="/eventos" element={<h1 className="text-2xl p-8">Gestão de Eventos (Em breve)</h1>} />
+            <Route path="/eventos" element={<Eventos />} /> {/* <--- Tela Real */}
             <Route path="/orcamentos" element={<h1 className="text-2xl p-8">Gestão de Orçamentos (Em breve)</h1>} />
           </Route>
         </Routes>
