@@ -25,6 +25,13 @@ enum StatusConvite {
   RECUSADO
 }
 
+// Novo Enum para controlar o evento
+enum StatusEvento {
+  AGENDADO
+  REALIZADO
+  CANCELADO
+}
+
 model Usuario {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -61,12 +68,10 @@ model Fornecedor {
   id          String      @id @default(uuid())
   nome        String
   cnpjOuCpf   String      @unique
-  categoria   String?     // Tipo de Serviço
+  categoria   String?
   telefone    String?
-  // Campos Novos:
   email       String?
   responsavel String?
-
   documentos  Documento[]
   orcamentos  Orcamento[]
   criadoEm    DateTime    @default(now())
@@ -83,14 +88,15 @@ model Documento {
 }
 
 model Evento {
-  id          String      @id @default(uuid())
+  id          String       @id @default(uuid())
   nome        String
   data        DateTime
   local       String?
   descricao   String?
+  status      StatusEvento @default(AGENDADO) // Campo novo!
   orcamentos  Orcamento[]
   convites    Convite[]
-  criadoEm    DateTime    @default(now())
+  criadoEm    DateTime     @default(now())
 }
 
 model Orcamento {

@@ -22,7 +22,6 @@ export const colaboradorSchema = z.object({
   dataNascimento: z.string().optional() 
 });
 
-// Atualizado com os campos novos
 export const fornecedorSchema = z.object({
   nome: z.string().min(2, "Razão Social é obrigatória"),
   cnpjOuCpf: z.string().min(11, "CNPJ inválido"),
@@ -30,4 +29,13 @@ export const fornecedorSchema = z.object({
   telefone: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
   responsavel: z.string().optional()
+});
+
+// Novo Schema de Evento
+export const eventoSchema = z.object({
+  nome: z.string().min(3, "Nome do evento é obrigatório"),
+  data: z.string(), // Recebe como string do front (ISO date)
+  local: z.string().optional(),
+  descricao: z.string().optional(),
+  status: z.enum(["AGENDADO", "REALIZADO", "CANCELADO"]).optional()
 });
