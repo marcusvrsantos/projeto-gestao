@@ -28,7 +28,6 @@ export const criarColaborador = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Já existe um colaborador com este e-mail.' });
     }
 
-    // Converte a data de string para objeto Date do Javascript (se existir)
     const dataNascFormatada = dados.dataNascimento ? new Date(dados.dataNascimento) : null;
 
     const colaborador = await prisma.colaborador.create({
@@ -45,10 +44,35 @@ export const criarColaborador = async (req: Request, res: Response) => {
 
     res.status(201).json(colaborador);
   } catch (error: any) {
-    if (error.errors) {
-      return res.status(400).json({ error: error.errors[0].message });
-    }
-    res.status(400).json({ error: error.message || 'Erro ao criar colaborador' });
+    if (error.errors) return res.status(400).json({ error: error.errors[0].message });
+    res.status(400).json({ error: error.message });
+  }
+};
+
+// --- NOVA FUNÇÃO DE ATUALIZAR ---
+export const atualizarColaborador = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const dados = colaboradorSchema.parse(req.body);
+    const dataNascFormatada = dados.dataNascimento ? new Date(dados.dataNascimento) : null;
+
+    const colaborador = await prisma.colaborador.update({
+      where: { id },
+      data: {
+        nome: dados.nome,
+        email: dados.email,
+        cargo: dados.cargo,
+        empresaId: dados.empresaId,
+        cpf: dados.cpf,
+        setor: dados.setor,
+        dataNascimento: dataNascFormatada
+      }
+    });
+    res.json(colaborador);
+  } catch (error: any) {
+    if (error.code === 'P2025') return res.status(404).json({ error: 'Colaborador não encontrado' });
+    if (error.errors) return res.status(400).json({ error: error.errors[0].message });
+    res.status(400).json({ error: error.message });
   }
 };
 

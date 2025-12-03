@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import { Plus, Trash2, Calendar, MapPin, AlignLeft, X, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { Plus, Trash2, Calendar, MapPin, X, CheckCircle, AlertCircle, Edit } from 'lucide-react';
 
-// Interfaces
 interface Evento {
   id: string;
   nome: string;
@@ -11,24 +10,17 @@ interface Evento {
   descricao?: string;
   status: 'AGENDADO' | 'REALIZADO' | 'CANCELADO';
 }
-
-interface MessageModalData {
-  show: boolean;
-  title: string;
-  message: string;
-  type: 'success' | 'error';
-}
+interface MessageModalData { show: boolean; title: string; message: string; type: 'success' | 'error'; }
 
 export function Eventos() {
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFormModal, setShowFormModal] = useState(false);
+  const [msgModal, setMsgModal] = useState<MessageModalData>({ show: false, title: '', message: '', type: 'success' });
   
-  const [msgModal, setMsgModal] = useState<MessageModalData>({ 
-    show: false, title: '', message: '', type: 'success' 
-  });
+  // Edição
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  // Campos do Form
   const [nome, setNome] = useState('');
   const [dataHora, setDataHora] = useState('');
   const [local, setLocal] = useState('');
@@ -40,38 +32,52 @@ export function Eventos() {
   function showMessage(title: string, message: string, type: 'success' | 'error') {
     setMsgModal({ show: true, title, message, type });
   }
-
-  function closeMessage() {
-    setMsgModal({ ...msgModal, show: false });
-  }
+  function closeMessage() { setMsgModal({ ...msgModal, show: false }); }
 
   async function carregar() {
     try {
       const res = await api.get('/eventos');
       setEventos(res.data);
-    } catch (error) {
-      showMessage('Erro', 'Erro ao carregar eventos.', 'error');
-    } finally {
-      setLoading(false);
-    }
+    } catch (error) { showMessage('Erro', 'Erro ao carregar eventos.', 'error'); } 
+    finally { setLoading(false); }
+  }
+
+  function handleNovo() {
+    setEditingId(null);
+    setNome(''); setDataHora(''); setLocal(''); setDescricao(''); setStatus('AGENDADO');
+    setShowFormModal(true);
+  }
+
+  function handleEditar(ev: Evento) {
+    setEditingId(ev.id);
+    setNome(ev.nome);
+    const d = new Date(ev.data);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    const formatted = d.toISOString().slice(0, 16);
+    setDataHora(formatted);
+
+    setLocal(ev.local || '');
+    setDescricao(ev.descricao || '');
+    setStatus(ev.status);
+    setShowFormModal(true);
   }
 
   async function handleSalvar(e: React.FormEvent) {
     e.preventDefault();
     try {
-      await api.post('/eventos', { 
-        nome, 
-        data: dataHora, // Envia o datetime-local completo
-        local, 
-        descricao,
-        status 
-      });
+      const payload = { 
+        nome, data: dataHora, local, descricao, status 
+      };
+
+      if (editingId) {
+        await api.put(`/eventos/${editingId}`, payload);
+        showMessage('Atualizado', 'Evento atualizado com sucesso.', 'success');
+      } else {
+        await api.post('/eventos', payload);
+        showMessage('Sucesso', 'Evento agendado com sucesso.', 'success');
+      }
       
       setShowFormModal(false);
-      showMessage('Sucesso!', 'Evento agendado com sucesso.', 'success');
-      
-      // Limpar
-      setNome(''); setDataHora(''); setLocal(''); setDescricao(''); setStatus('AGENDADO');
       carregar();
     } catch (error: any) {
       const erroMsg = error.response?.data?.error || 'Erro ao salvar';
@@ -90,7 +96,6 @@ export function Eventos() {
     }
   }
 
-  // Formata data para exibir bonito na tabela
   function formatarData(isoString: string) {
     const data = new Date(isoString);
     return data.toLocaleString('pt-BR', { 
@@ -99,7 +104,6 @@ export function Eventos() {
     });
   }
 
-  // Cor do badge de status
   function getStatusColor(st: string) {
     if (st === 'REALIZADO') return 'bg-green-100 text-green-700 border-green-200';
     if (st === 'CANCELADO') return 'bg-red-100 text-red-700 border-red-200';
@@ -113,10 +117,7 @@ export function Eventos() {
           <h1 className="text-2xl font-bold text-slate-800">Gestão de Eventos</h1>
           <p className="text-slate-500">Agenda corporativa e controle de atividades.</p>
         </div>
-        <button 
-          onClick={() => setShowFormModal(true)}
-          className="bg-[#A6192E] hover:bg-[#8a1425] text-white px-4 py-2 rounded flex items-center gap-2 transition-colors shadow-sm"
-        >
+        <button onClick={handleNovo} className="bg-[#A6192E] hover:bg-[#8a1425] text-white px-4 py-2 rounded flex items-center gap-2 transition-colors shadow-sm">
           <Plus size={20} /> Novo Evento
         </button>
       </div>
@@ -153,99 +154,85 @@ export function Eventos() {
                     {ev.local || 'A definir'}
                   </div>
                 </td>
-                <td className="px-6 py-4 text-right">
-                  <button onClick={() => handleDeletar(ev.id)} className="text-red-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors">
+                <td className="px-6 py-4 text-right whitespace-nowrap">
+                  <button onClick={() => handleEditar(ev)} className="text-blue-500 hover:text-blue-700 p-2 transition-colors">
+                    <Edit size={18} />
+                  </button>
+                  <button onClick={() => handleDeletar(ev.id)} className="text-red-400 hover:text-red-600 p-2 transition-colors">
                     <Trash2 size={18} />
                   </button>
                 </td>
               </tr>
             ))}
-             {eventos.length === 0 && !loading && (
+            {eventos.length === 0 && !loading && (
               <tr><td colSpan={4} className="px-6 py-8 text-center text-slate-400">Nenhum evento agendado.</td></tr>
             )}
           </tbody>
         </table>
       </div>
 
-      {/* MODAL DE CADASTRO */}
       {showFormModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
           <div className="bg-white rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden scale-in-center">
-            
             <div className="flex justify-between items-center p-6 border-b border-slate-100">
-              <h2 className="text-xl font-bold text-[#A6192E]">Novo Evento</h2>
+              <h2 className="text-xl font-bold text-[#A6192E]">
+                {editingId ? 'Editar Evento' : 'Novo Evento'}
+              </h2>
               <button onClick={() => setShowFormModal(false)} className="text-slate-400 hover:text-slate-600 transition-colors rounded-full p-1 hover:bg-slate-100">
                 <X size={24} />
               </button>
             </div>
-
             <form onSubmit={handleSalvar} className="p-8 space-y-5">
-              
-              {/* Nome */}
               <div>
                 <label className="block text-sm font-bold text-[#A6192E] mb-2">Nome do Evento</label>
-                <div className="relative">
-                  <input required value={nome} onChange={e => setNome(e.target.value)} className="w-full border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E] focus:ring-1 focus:ring-[#A6192E]" placeholder="Ex: Festa de Fim de Ano" />
-                </div>
+                <input required value={nome} onChange={e => setNome(e.target.value)} className="w-full border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E]" placeholder="Ex: Festa de Fim de Ano" />
               </div>
-
-              {/* Data e Local */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                    <label className="block text-sm font-bold text-[#A6192E] mb-2">Data e Hora</label>
-                   <div className="relative">
-                     <input required type="datetime-local" value={dataHora} onChange={e => setDataHora(e.target.value)} className="w-full border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E] focus:ring-1 focus:ring-[#A6192E]" />
-                   </div>
+                   <input required type="datetime-local" value={dataHora} onChange={e => setDataHora(e.target.value)} className="w-full border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E]" />
                 </div>
                 <div>
                    <label className="block text-sm font-bold text-[#A6192E] mb-2">Local</label>
                    <div className="relative">
                      <MapPin className="absolute left-3 top-3 text-slate-400 h-5 w-5" />
-                     <input value={local} onChange={e => setLocal(e.target.value)} className="w-full pl-10 border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E] focus:ring-1 focus:ring-[#A6192E]" placeholder="Sala de Reuniões / Externo" />
+                     <input value={local} onChange={e => setLocal(e.target.value)} className="w-full pl-10 border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E]" placeholder="Sala de Reuniões / Externo" />
                    </div>
                 </div>
               </div>
-
-              {/* Status e Descrição */}
               <div>
-                <label className="block text-sm font-bold text-[#A6192E] mb-2">Status Inicial</label>
+                <label className="block text-sm font-bold text-[#A6192E] mb-2">Status</label>
                 <select value={status} onChange={e => setStatus(e.target.value)} className="w-full border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E] bg-white">
                   <option value="AGENDADO">Agendado</option>
                   <option value="REALIZADO">Realizado</option>
                   <option value="CANCELADO">Cancelado</option>
                 </select>
               </div>
-
               <div>
                 <label className="block text-sm font-bold text-[#A6192E] mb-2">Descrição / Observações</label>
-                <textarea rows={3} value={descricao} onChange={e => setDescricao(e.target.value)} className="w-full border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E] focus:ring-1 focus:ring-[#A6192E]" placeholder="Detalhes importantes sobre o evento..." />
+                <textarea rows={3} value={descricao} onChange={e => setDescricao(e.target.value)} className="w-full border border-slate-300 p-3 rounded-lg text-slate-700 outline-none focus:border-[#A6192E]" placeholder="Detalhes importantes sobre o evento..." />
               </div>
-
               <div className="pt-6 flex justify-center">
-                <button type="submit" className="px-10 py-3 bg-[#900020] text-white font-bold rounded-full hover:bg-[#700018] shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1">
-                  Agendar Evento
+                <button type="submit" className="px-10 py-3 bg-[#900020] text-white font-bold rounded-full hover:bg-[#700018] shadow-md transition-all transform hover:-translate-y-1">
+                  {editingId ? 'Salvar Alterações' : 'Agendar Evento'}
                 </button>
               </div>
-
             </form>
           </div>
         </div>
       )}
 
-      {/* MODAL MENSAGEM */}
       {msgModal.show && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl scale-in-center text-center flex flex-col items-center font-sans">
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]">
+          <div className="bg-white p-6 rounded-lg text-center max-w-sm">
+            <div className={`w-12 h-12 rounded-full mx-auto flex items-center justify-center mb-4 ${
               msgModal.type === 'success' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
             }`}>
-              {msgModal.type === 'success' ? <CheckCircle size={32} /> : <AlertCircle size={32} />}
+              {msgModal.type === 'success' ? <CheckCircle size={24} /> : <AlertCircle size={24} />}
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">{msgModal.title}</h3>
-            <p className="text-slate-600 mb-8">{msgModal.message}</p>
-            <button onClick={closeMessage} className="w-full py-3 bg-[#900020] text-white font-bold rounded-full hover:bg-[#700018] transition-colors shadow-md">
-              OK, entendi
-            </button>
+             <h3 className="font-bold text-lg mb-2">{msgModal.title}</h3>
+             <p className="mb-4 text-slate-600">{msgModal.message}</p>
+             <button onClick={closeMessage} className="bg-slate-800 text-white px-4 py-2 rounded w-full">OK</button>
           </div>
         </div>
       )}
