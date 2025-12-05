@@ -25,7 +25,6 @@ enum StatusConvite {
   RECUSADO
 }
 
-// Novo Enum para controlar o evento
 enum StatusEvento {
   AGENDADO
   REALIZADO
@@ -64,6 +63,17 @@ model Colaborador {
   criadoEm       DateTime  @default(now())
 }
 
+// --- NOVA TABELA ---
+model ConvidadoExterno {
+  id        String   @id @default(uuid())
+  nome      String
+  email     String   @unique
+  telefone  String?
+  empresa   String?  // Empresa/Org que ele representa
+  cargo     String?
+  criadoEm  DateTime @default(now())
+}
+
 model Fornecedor {
   id          String      @id @default(uuid())
   nome        String
@@ -93,7 +103,7 @@ model Evento {
   data        DateTime
   local       String?
   descricao   String?
-  status      StatusEvento @default(AGENDADO) // Campo novo!
+  status      StatusEvento @default(AGENDADO)
   orcamentos  Orcamento[]
   convites    Convite[]
   criadoEm    DateTime     @default(now())

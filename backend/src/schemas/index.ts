@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-// ... (Schemas anteriores mantidos, adicionando o de Orçamento)
-
 export const loginSchema = z.object({
   email: z.string().email("E-mail inválido"),
   senha: z.string().min(6, "A senha deve ter no mínimo 6 caracteres")
@@ -25,8 +23,8 @@ export const colaboradorSchema = z.object({
 });
 
 export const fornecedorSchema = z.object({
-  nome: z.string().min(2, "Razão Social é obrigatória"),
-  cnpjOuCpf: z.string().min(11, "CNPJ inválido"),
+  nome: z.string().min(2),
+  cnpjOuCpf: z.string().min(11),
   categoria: z.string().optional(),
   telefone: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
@@ -41,7 +39,6 @@ export const eventoSchema = z.object({
   status: z.enum(["AGENDADO", "REALIZADO", "CANCELADO"]).optional()
 });
 
-// Novo Schema de Orçamento
 export const orcamentoSchema = z.object({
   valor: z.number().min(0),
   status: z.enum(["PENDENTE", "APROVADO", "REJEITADO"]).optional(),
@@ -49,3 +46,13 @@ export const orcamentoSchema = z.object({
   eventoId: z.string().uuid(),
   fornecedorId: z.string().uuid()
 });
+
+// Novo Schema para Convidado Externo
+export const convidadoExternoSchema = z.object({
+  nome: z.string().min(2, "Nome obrigatório"),
+  email: z.string().email("E-mail inválido"),
+  telefone: z.string().optional(),
+  empresa: z.string().optional(),
+  cargo: z.string().optional()
+});
+export * from './empresaSchema';
