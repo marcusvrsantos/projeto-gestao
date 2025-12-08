@@ -65,3 +65,21 @@ export const deletarEvento = async (req: Request, res: Response) => {
     res.status(400).json({ error: 'Erro ao deletar' });
   }
 };
+
+export const obterEvento = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    const evento = await prisma.evento.findUnique({
+      where: { id }
+    });
+
+    if (!evento) {
+      return res.status(404).json({ error: 'Evento não encontrado' });
+    }
+
+    res.json(evento);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar evento' });
+  }
+};

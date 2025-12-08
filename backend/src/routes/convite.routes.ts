@@ -3,12 +3,13 @@ import { listarConvitesPorEvento, adicionarConvidados, removerConvidado, dispara
 
 const router = Router();
 
-router.get('/:eventoId', listarConvitesPorEvento);
+router.get('/evento/:eventoId', listarConvitesPorEvento);
+
 router.post('/adicionar', adicionarConvidados);
 router.post('/disparar', dispararConvites);
 router.delete('/:id', removerConvidado);
 
-// Rotas Públicas (Usam o Token)
+// Rotas Públicas
 router.get('/publico/:token', buscarPorToken);
 router.post('/responder/:token', responderConvite);
 

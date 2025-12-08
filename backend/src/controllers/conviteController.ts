@@ -64,7 +64,7 @@ export const dispararConvites = async (req: Request, res: Response) => {
 
     let enviados = 0;
 
-   const baseURL = "https://super-engine-r4rgggrr6qxv2xjj7-5173.app.github.dev"; 
+   const baseURL = process.env.FRONTEND_URL || "http://localhost:5173";
     
     for (const convite of convitesPendentes) {
       const linkConfirmacao = `${baseURL}/confirmar/${convite.token}`;

@@ -7,7 +7,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Colaboradores } from './pages/Colaboradores';
 import { Fornecedores } from './pages/Fornecedores';
 import { Eventos } from './pages/Eventos';
-import { DetalhesEvento } from './pages/DetalhesEvento';
+import { EventoDetalhes } from './pages/EventoDetalhes';
 import { Orcamentos } from './pages/Orcamentos';
 import { ConvidadosExternos } from './pages/ConvidadosExternos';
 import { ConfirmacaoConvite } from './pages/ConfirmacaoConvite'; // <--- Import
@@ -33,7 +33,7 @@ export default function App() {
             <Route path="/convidados-externos" element={<ConvidadosExternos />} />
             <Route path="/fornecedores" element={<Fornecedores />} />
             <Route path="/eventos" element={<Eventos />} />
-            <Route path="/eventos/:id" element={<DetalhesEvento />} />
+            <Route path="/eventos/:id" element={<EventoDetalhes />} />
             <Route path="/orcamentos" element={<Orcamentos />} />
           </Route>
         </Routes>

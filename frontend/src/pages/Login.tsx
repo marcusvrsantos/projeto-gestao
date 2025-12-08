@@ -1,96 +1,102 @@
-import { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom'; // <--- Import novo
-import { AuthContext } from '../contexts/AuthContext';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
+import logoIsg from '../assets/isg-icon-color.png'; // <--- Importe a imagem aqui
 
 export function Login() {
-  const { signIn } = useContext(AuthContext);
-  const navigate = useNavigate(); // <--- Hook de navegação
+  const { signIn, loading } = useAuth(); // Usando o loading do contexto que criamos
+  const navigate = useNavigate();
   
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
-  const [mostrarSenha, setMostrarSenha] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError('');
     
     try {
       await signIn(email, senha);
-      // Se chegou aqui, deu sucesso!
-      navigate('/dashboard'); // <--- A MÁGICA: Manda para o Dashboard
-    } catch (err: any) {
-      console.error(err);
-      const mensagemReal = err.response?.data?.error || "Falha na conexão ou credenciais inválidas";
-      setError(mensagemReal);
-    } finally {
-      setLoading(false);
+      navigate('/dashboard'); // Ou para onde você quiser redirecionar
+    } catch (err) {
+      setError('Credenciais inválidas. Verifique e tente novamente.');
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa] font-sans">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-[400px]">
+    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 font-sans">
+      <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
         
-        <div className="flex flex-col items-center mb-8">
-          <div className="flex items-center mb-4">
-            <span className="text-4xl font-bold text-gray-800 tracking-tighter mr-2">ISG</span>
-            <svg className="w-8 h-8 text-[#A6192E]" viewBox="0 0 24 24" fill="currentColor">
-               <path d="M2 2h20v20H2z" fill="none"/>
-               <path d="M3 13h8V3H3v10zm2-8h4v6H5V5zm10 6h8V3h-8v8zm2-6h4v4h-4V5zM3 21h8v-6H3v6zm2-4h4v2H5v-2zm10 4h8v-8h-8v8zm2-6h4v4h-4v-4z"/>
-            </svg>
-          </div>
-          <span className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Participações S.A.</span>
-          <h2 className="text-center text-gray-600 text-sm px-4 leading-relaxed">
-            Insira suas credenciais da empresa <br/>
-            ISG Participações para acessar o <strong className="font-bold text-gray-800">TOTVS Identity.</strong>
-          </h2>
+        {/* --- ÁREA DO CABEÇALHO (LOGO + TÍTULO) --- */}
+        <div className="flex flex-col items-center mb-8 text-center">
+          {/* Logo Nova */}
+          <img 
+            src={logoIsg} 
+            alt="Logo ISG" 
+            className="w-20 h-20 mb-4 object-contain" 
+          />
+          
+          {/* Nome da Empresa */}
+          <h1 className="text-2xl font-bold text-slate-700 mb-4">
+            ISG Participações S.A.
+          </h1>
+
+          {/* Subtítulo / Instrução Atualizado */}
+          <p className="text-slate-500 text-sm">
+            Insira suas credenciais da <br/>
+            ISG Participações para acessar o <strong className="text-slate-800">Sistema de Gestão de Eventos</strong>.
+          </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-5">
+        {/* --- FORMULÁRIO --- */}
+        <form onSubmit={handleLogin} className="space-y-4">
+          
+          {/* Input Usuário */}
           <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2">Usuário</label>
+            <label className="block text-sm font-bold text-slate-700 mb-1">Usuário</label>
             <input 
-              type="email"
+              type="text" 
+              placeholder="E-mail ou nome de usuário"
+              className="w-full border border-slate-300 rounded p-3 text-slate-700 focus:outline-none focus:border-red-800 focus:ring-1 focus:ring-red-800 transition"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="shadow-sm appearance-none border border-gray-300 rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-              placeholder="E-mail ou nome de usuário"
-              required
             />
           </div>
 
-          <div className="relative">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Senha</label>
-            <input 
-              type={mostrarSenha ? "text" : "password"}
-              value={senha}
-              onChange={e => setSenha(e.target.value)}
-              className="shadow-sm appearance-none border border-gray-300 rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors pr-10"
-              placeholder="Digite sua senha"
-              required
-            />
-            <button
-              type="button"
-              onClick={() => setMostrarSenha(!mostrarSenha)}
-              className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600"
-            >
-              {mostrarSenha ? <EyeOff size={20} /> : <Eye size={20} />}
-            </button>
+          {/* Input Senha */}
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-1">Senha</label>
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                placeholder="Digite sua senha"
+                className="w-full border border-slate-300 rounded p-3 text-slate-700 focus:outline-none focus:border-red-800 focus:ring-1 focus:ring-red-800 transition pr-10"
+                value={senha}
+                onChange={e => setSenha(e.target.value)}
+              />
+              <button 
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-3 text-slate-400 hover:text-slate-600"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
-          {error && <p className="text-red-500 text-xs text-center bg-red-50 p-2 rounded border border-red-100 font-mono">{error}</p>}
+          {error && <span className="text-red-600 text-sm block text-center">{error}</span>}
 
+          {/* Botão Entrar */}
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full bg-[#545454] hover:bg-[#3F3F3F] text-white font-bold py-3 px-4 rounded transition duration-200 flex justify-center items-center"
+            className="w-full bg-[#4A4A4A] hover:bg-[#333] text-white font-bold py-3 rounded transition-colors disabled:opacity-70 mt-4"
           >
-            {loading ? <Loader2 className="animate-spin" /> : 'Entrar'}
+            {loading ? 'Acessando...' : 'Entrar'}
           </button>
+
         </form>
       </div>
     </div>

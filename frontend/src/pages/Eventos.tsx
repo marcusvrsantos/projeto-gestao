@@ -3,8 +3,10 @@ import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Calendar, MapPin, X, CheckCircle, AlertCircle, Edit, Settings, AlertTriangle } from 'lucide-react';
 
+// Ajustei a interface para aceitar _id caso venha do backend
 interface Evento {
-  id: string;
+  id?: string;
+  _id?: string; // Fallback para MongoDB
   nome: string;
   data: string;
   local?: string;
@@ -44,6 +46,8 @@ export function Eventos() {
     try {
       const res = await api.get('/eventos');
       setEventos(res.data);
+      // DEBUG: Ver o que está chegando do backend
+      console.log("Eventos carregados:", res.data);
     } catch (error) { showMessage('Erro', 'Erro ao carregar eventos.', 'error'); } 
     finally { setLoading(false); }
   }
@@ -55,7 +59,10 @@ export function Eventos() {
   }
 
   function handleEditar(ev: Evento) {
-    setEditingId(ev.id);
+    const idReal = ev.id || ev._id; // Garante pegar o ID correto
+    if (!idReal) return;
+
+    setEditingId(idReal);
     setNome(ev.nome);
     const d = new Date(ev.data);
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
@@ -94,7 +101,7 @@ export function Eventos() {
     if (!confirmModal.id) return;
     try {
       await api.delete(`/eventos/${confirmModal.id}`);
-      setEventos(eventos.filter(e => e.id !== confirmModal.id));
+      setEventos(eventos.filter(e => (e.id || e._id) !== confirmModal.id));
       setConfirmModal({ show: false, id: null });
       showMessage('Excluído', 'Evento removido.', 'success');
     } catch (error) {
@@ -112,6 +119,20 @@ export function Eventos() {
     if (st === 'REALIZADO') return 'bg-green-100 text-green-700 border-green-200';
     if (st === 'CANCELADO') return 'bg-red-100 text-red-700 border-red-200';
     return 'bg-blue-100 text-blue-700 border-blue-200';
+  }
+
+  // --- FUNÇÃO SEGURA DE NAVEGAÇÃO ---
+  function irParaDetalhes(ev: Evento) {
+    const idReal = ev.id || ev._id;
+    console.log('Tentando navegar para evento com ID:', idReal);
+    
+    if (!idReal) {
+      alert('ERRO: O evento não possui um ID válido. Verifique o Console (F12).');
+      console.error('Objeto evento sem ID:', ev);
+      return;
+    }
+    
+    navigate('/eventos/' + idReal);
   }
 
   return (
@@ -137,37 +158,40 @@ export function Eventos() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {eventos.map(ev => (
-              <tr key={ev.id} className="hover:bg-slate-50 transition-colors">
-                <td className="px-6 py-4">
-                  <div className="font-medium text-slate-800 text-base">{ev.nome}</div>
-                  <div className="text-slate-500 text-sm mt-1 line-clamp-1">{ev.descricao || 'Sem descrição'}</div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2 text-slate-700 font-medium">
-                    <Calendar size={16} className="text-slate-400"/>
-                    {formatarData(ev.data)}
-                  </div>
-                  <span className={`inline-block mt-2 px-2 py-0.5 rounded text-xs font-bold border ${getStatusColor(ev.status)}`}>
-                    {ev.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2 text-slate-600">
-                    <MapPin size={16} className="text-slate-400"/>
-                    {ev.local || 'A definir'}
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-right whitespace-nowrap">
-                  <button onClick={() => navigate(`/eventos/${ev.id}`)} className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded mr-3 text-sm font-medium border border-slate-200" title="Gerenciar Convidados">
-                    <Settings size={16} className="inline mr-1" /> Gerenciar
-                  </button>
-                  <button onClick={() => handleEditar(ev)} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
-                  {/* Função de Excluir nova */}
-                  <button onClick={() => solicitarExclusao(ev.id)} className="text-red-400 hover:text-red-600 p-2"><Trash2 size={18} /></button>
-                </td>
-              </tr>
-            ))}
+            {eventos.map(ev => {
+              const id = ev.id || ev._id || 'sem-id';
+              return (
+                <tr key={id} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="font-medium text-slate-800 text-base">{ev.nome}</div>
+                    <div className="text-slate-500 text-sm mt-1 line-clamp-1">{ev.descricao || 'Sem descrição'}</div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2 text-slate-700 font-medium">
+                      <Calendar size={16} className="text-slate-400"/>
+                      {formatarData(ev.data)}
+                    </div>
+                    <span className={`inline-block mt-2 px-2 py-0.5 rounded text-xs font-bold border ${getStatusColor(ev.status)}`}>
+                      {ev.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <MapPin size={16} className="text-slate-400"/>
+                      {ev.local || 'A definir'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-right whitespace-nowrap">
+                    {/* Botão Gerenciar atualizado com função segura */}
+                    <button onClick={() => irParaDetalhes(ev)} className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded mr-3 text-sm font-medium border border-slate-200" title="Gerenciar Convidados">
+                      <Settings size={16} className="inline mr-1" /> Gerenciar
+                    </button>
+                    <button onClick={() => handleEditar(ev)} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
+                    <button onClick={() => solicitarExclusao(id)} className="text-red-400 hover:text-red-600 p-2"><Trash2 size={18} /></button>
+                  </td>
+                </tr>
+              );
+            })}
             {eventos.length === 0 && !loading && (
               <tr><td colSpan={4} className="px-6 py-8 text-center text-slate-400">Nenhum evento agendado.</td></tr>
             )}
