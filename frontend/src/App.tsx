@@ -7,13 +7,16 @@ import { Dashboard } from './pages/Dashboard';
 import { Colaboradores } from './pages/Colaboradores';
 import { Fornecedores } from './pages/Fornecedores';
 import { Eventos } from './pages/Eventos';
-import { EventoDetalhes } from './pages/EventoDetalhes';
+import { EventoDetalhes } from './pages/EventoDetalhes'; // Verifique se está em 'pages' ou 'components'
 import { Orcamentos } from './pages/Orcamentos';
 import { ConvidadosExternos } from './pages/ConvidadosExternos';
-import { ConfirmacaoConvite } from './pages/ConfirmacaoConvite'; // <--- Import
+
+// AJUSTE: Importando com o nome do arquivo que criamos
+import { ConfirmarPresenca } from './pages/ConfirmarPresenca'; 
 
 const PrivateRoute = () => {
   const { signed } = useContext(AuthContext);
+  // Se estiver carregando (loading), idealmente mostraria um spinner aqui, mas assim funciona
   return signed ? <Layout /> : <Navigate to="/" />;
 };
 
@@ -22,11 +25,13 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Rotas Públicas */}
+          {/* --- Rotas Públicas (Qualquer um acessa) --- */}
           <Route path="/" element={<Login />} />
-          <Route path="/confirmar/:token" element={<ConfirmacaoConvite />} /> {/* <--- Nova Rota Pública */}
+          
+          {/* Rota do Convite: O token na URL define quem é o convidado */}
+          <Route path="/confirmar/:token" element={<ConfirmarPresenca />} />
 
-          {/* Rotas Privadas (Exigem Login) */}
+          {/* --- Rotas Privadas (Só logado acessa) --- */}
           <Route element={<PrivateRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/colaboradores" element={<Colaboradores />} />

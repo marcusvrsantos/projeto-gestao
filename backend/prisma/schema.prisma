@@ -132,14 +132,3 @@ model Convite {
   token          String        @unique
   enviadoEm      DateTime      @default(now())
 }
-
-model ConvidadoExterno {
-  idString    @id @default(uuid()) @map("id")
-  nome        String
-  email       String   @unique
-  empresa     String?  // Ex: "Google", "Fornecedor X"
-  telefone    String?
-  criadoEm    DateTime @default(now())
-
-  @@map("convidados_externos")
-}
