@@ -51,6 +51,10 @@ export function EventoDetalhes() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [sending, setSending] = useState(false);
 
+  // ... outros estados
+  const [viewMode, setViewMode] = useState<'LIST' | 'CREATE'>('LIST'); // Controla se vê a lista ou o formulário
+  const [newGuest, setNewGuest] = useState({ nome: '', email: '', empresa: '' }); // Dados do formulário
+
   const [msgModal, setMsgModal] = useState<MessageModalData>({ show: false, title: '', message: '', type: 'success' });
   const [confirmModal, setConfirmModal] = useState<ConfirmModalData>({ show: false, action: null });
 
@@ -262,6 +266,38 @@ async function carregarTudo() {
     </div>
   );
 
+  async function handleCreateGuest(e: React.FormEvent) {
+    e.preventDefault();
+    if(!newGuest.nome || !newGuest.email) return;
+
+    try {
+      // 1. Salva no banco
+      const res = await api.post('/convidados-externos', newGuest);
+      const criado = res.data;
+
+      // 2. Formata para o padrão visual da sua lista
+      const novoNaLista: PessoaDisponivel = {
+        id: criado.id,
+        nome: criado.nome,
+        email: criado.email,
+        empresaNome: criado.empresa || 'Convidado Externo',
+        tipo: 'EXTERNO'
+      };
+
+      // 3. Adiciona na lista visual e JÁ DEIXA SELECIONADO ✅
+      setPessoasDisponiveis(prev => [...prev, novoNaLista]);
+      setSelectedPessoas(prev => [...prev, criado.id]);
+      
+      // 4. Volta para a lista e limpa o form
+      setViewMode('LIST');
+      setNewGuest({ nome: '', email: '', empresa: '' });
+      setFiltroUnidade('externos'); // Opcional: muda o filtro para mostrar o novo
+      
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Erro ao criar convidado.');
+    }
+  }
+
   return (
     <div className="font-sans space-y-6">
       {/* HEADER */}
@@ -335,47 +371,107 @@ async function carregarTudo() {
         </table>
       </div>
 
-      {/* --- MODAL SELEÇÃO --- */}
+{/* --- MODAL INTELIGENTE (LISTA + CADASTRO) --- */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4">
-            <div className="bg-white rounded-xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh] scale-in-center">
-                <div className="p-6 border-b border-slate-200 flex justify-between items-center">
-                    <div><h2 className="text-xl font-bold text-[#A6192E]">Selecionar Convidados</h2></div>
+            <div className="bg-white rounded-xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh] scale-in-center overflow-hidden">
+                
+                {/* CABEÇALHO DO MODAL */}
+                <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                    <div className="flex items-center gap-3">
+                        {viewMode === 'CREATE' && (
+                            <button onClick={() => setViewMode('LIST')} className="p-1 hover:bg-slate-200 rounded-full transition">
+                                <ArrowLeft size={20} className="text-slate-500"/>
+                            </button>
+                        )}
+                        <h2 className="text-xl font-bold text-[#A6192E]">
+                            {viewMode === 'LIST' ? 'Selecionar Convidados' : 'Novo Convidado Externo'}
+                        </h2>
+                    </div>
                     <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600"><X size={24}/></button>
                 </div>
                 
-                <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center gap-4">
-                    <Filter size={20} className="text-slate-400"/>
-                    <select className="flex-1 border border-slate-300 rounded p-2 outline-none focus:border-[#A6192E]" value={filtroUnidade} onChange={e => setFiltroUnidade(e.target.value)}>
-                        <option value="todas">Todas as Unidades</option>
-                        <option value="externos">Convidados Externos</option>
-                        {empresas.map(e => <option key={e.id} value={e.id}>{e.razaoSocial}</option>)}
-                    </select>
-                    <button onClick={toggleSelectAll} className="text-[#A6192E] font-bold text-sm hover:underline whitespace-nowrap">Selecionar Todos</button>
-                </div>
+                {/* --- MODO 1: LISTA DE SELEÇÃO --- */}
+                {viewMode === 'LIST' && (
+                    <>
+                        <div className="p-4 bg-white border-b border-slate-200 flex flex-col sm:flex-row items-center gap-4">
+                            <div className="flex items-center gap-2 flex-1 w-full">
+                                <Filter size={20} className="text-slate-400"/>
+                                <select className="flex-1 border border-slate-300 rounded p-2 outline-none focus:border-[#A6192E]" value={filtroUnidade} onChange={e => setFiltroUnidade(e.target.value)}>
+                                    <option value="todas">Todas as Unidades</option>
+                                    <option value="externos">Convidados Externos</option>
+                                    {empresas.map(e => <option key={e.id} value={e.id}>{e.razaoSocial}</option>)}
+                                </select>
+                            </div>
+                            
+                            <div className="flex items-center gap-3 w-full sm:w-auto justify-between">
+                                <button onClick={toggleSelectAll} className="text-[#A6192E] font-bold text-sm hover:underline whitespace-nowrap">
+                                    Selecionar Todos
+                                </button>
+                                {/* BOTÃO PARA IR PRO MODO CADASTRO */}
+                                <button onClick={() => setViewMode('CREATE')} className="bg-slate-800 text-white px-3 py-1.5 rounded text-sm font-bold hover:bg-slate-900 flex items-center gap-2">
+                                    <Plus size={16}/> Novo Externo
+                                </button>
+                            </div>
+                        </div>
 
-                <div className="flex-1 overflow-y-auto p-2">
-                    <table className="w-full text-left">
-                        <thead className="bg-white sticky top-0 z-10">
-                            <tr><th className="px-4 py-2 w-10"></th><th className="px-4 py-2 text-xs font-bold text-slate-500 uppercase">Nome</th><th className="px-4 py-2 text-xs font-bold text-slate-500 uppercase">Unidade</th></tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {getPessoasFiltradas().map(p => (
-                                <tr key={p.id} className={`hover:bg-slate-50 cursor-pointer ${selectedPessoas.includes(p.id) ? 'bg-red-50' : ''}`} onClick={() => toggleSelection(p.id)}>
-                                    <td className="px-4 py-3 text-center"><input type="checkbox" checked={selectedPessoas.includes(p.id)} readOnly className="w-5 h-5 text-[#A6192E] rounded border-slate-300 focus:ring-[#A6192E]"/></td>
-                                    <td className="px-4 py-3 font-bold text-slate-700">{p.nome} <span className="block text-xs font-normal text-slate-500">{p.email}</span></td>
-                                    <td className="px-4 py-3 text-sm text-slate-600">{p.empresaNome}</td>
-                                </tr>
-                            ))}
-                            {getPessoasFiltradas().length === 0 && (<tr><td colSpan={3} className="p-8 text-center text-slate-400">Ninguém encontrado.</td></tr>)}
-                        </tbody>
-                    </table>
-                </div>
+                        <div className="flex-1 overflow-y-auto p-2 min-h-[300px]">
+                            <table className="w-full text-left">
+                                <thead className="bg-white sticky top-0 z-10 shadow-sm">
+                                    <tr><th className="px-4 py-2 w-10"></th><th className="px-4 py-2 text-xs font-bold text-slate-500 uppercase">Nome</th><th className="px-4 py-2 text-xs font-bold text-slate-500 uppercase">Origem</th></tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {getPessoasFiltradas().map(p => (
+                                        <tr key={p.id} className={`hover:bg-slate-50 cursor-pointer ${selectedPessoas.includes(p.id) ? 'bg-red-50' : ''}`} onClick={() => toggleSelection(p.id)}>
+                                            <td className="px-4 py-3 text-center"><input type="checkbox" checked={selectedPessoas.includes(p.id)} readOnly className="w-5 h-5 text-[#A6192E] rounded border-slate-300 focus:ring-[#A6192E]"/></td>
+                                            <td className="px-4 py-3 font-bold text-slate-700">{p.nome} <span className="block text-xs font-normal text-slate-500">{p.email}</span></td>
+                                            <td className="px-4 py-3 text-sm text-slate-600 flex items-center gap-2">
+                                                {p.tipo === 'EXTERNO' ? <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-[10px] font-bold">EXT</span> : <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-bold">INT</span>}
+                                                {p.empresaNome}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {getPessoasFiltradas().length === 0 && (<tr><td colSpan={3} className="p-12 text-center text-slate-400">Ninguém encontrado com este filtro.</td></tr>)}
+                                </tbody>
+                            </table>
+                        </div>
 
-                <div className="p-4 border-t border-slate-200 flex justify-between items-center bg-slate-50 rounded-b-xl">
-                    <span className="text-slate-600 font-medium">{selectedPessoas.length} selecionados</span>
-                    <button onClick={handleAdicionarSelecionados} disabled={selectedPessoas.length === 0} className="px-6 py-2 bg-[#A6192E] hover:bg-[#8a1425] disabled:opacity-50 text-white font-bold rounded shadow-md transition-colors">Adicionar Selecionados</button>
-                </div>
+                        <div className="p-4 border-t border-slate-200 flex justify-between items-center bg-slate-50">
+                            <span className="text-slate-600 font-medium">{selectedPessoas.length} selecionados</span>
+                            <button onClick={handleAdicionarSelecionados} disabled={selectedPessoas.length === 0} className="px-6 py-2 bg-[#A6192E] hover:bg-[#8a1425] disabled:opacity-50 text-white font-bold rounded shadow-md transition-colors">
+                                Adicionar Selecionados
+                            </button>
+                        </div>
+                    </>
+                )}
+
+                {/* --- MODO 2: FORMULÁRIO DE CADASTRO --- */}
+                {viewMode === 'CREATE' && (
+                    <form onSubmit={handleCreateGuest} className="p-8 flex flex-col gap-4 animate-fade-in">
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-1">Nome Completo *</label>
+                            <input autoFocus type="text" className="w-full border border-slate-300 rounded p-2 focus:border-[#A6192E] outline-none" 
+                                value={newGuest.nome} onChange={e => setNewGuest({...newGuest, nome: e.target.value})} placeholder="Ex: João da Silva" required />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-1">E-mail *</label>
+                            <input type="email" className="w-full border border-slate-300 rounded p-2 focus:border-[#A6192E] outline-none" 
+                                value={newGuest.email} onChange={e => setNewGuest({...newGuest, email: e.target.value})} placeholder="Ex: joao@gmail.com" required />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-1">Empresa / Organização (Opcional)</label>
+                            <input type="text" className="w-full border border-slate-300 rounded p-2 focus:border-[#A6192E] outline-none" 
+                                value={newGuest.empresa} onChange={e => setNewGuest({...newGuest, empresa: e.target.value})} placeholder="Ex: Fornecedor XYZ" />
+                        </div>
+
+                        <div className="pt-4 flex justify-end gap-3">
+                            <button type="button" onClick={() => setViewMode('LIST')} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded font-bold">Cancelar</button>
+                            <button type="submit" className="px-6 py-2 bg-slate-800 text-white hover:bg-slate-900 rounded font-bold shadow-lg flex items-center gap-2">
+                                <CheckCircle size={18}/> Salvar e Selecionar
+                            </button>
+                        </div>
+                    </form>
+                )}
             </div>
         </div>
       )}
